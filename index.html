@@ -11,7 +11,7 @@
   </style>
 </head>
 <body>
-  <h1>Mitosis GIF Maker b1!</h1>
+  <h1>Mitosis GIF Maker b2!</h1>
   <input type="file" id="uploader" accept="image/png">
   <canvas id="canvas"></canvas>
   <a id="download"></a>
@@ -75,7 +75,7 @@
         }
 
         ctx.restore();
-        gif.addFrame(ctx, { copy: true, delay: 50 });
+        gif.addFrame(canvas, { copy: true, delay: 50 });
       }
 
       gif.on('finished', (blob) => {
