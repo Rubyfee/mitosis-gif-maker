@@ -31,62 +31,89 @@
     };
 
     function createMitosisGIF(img) {
-      const size = Math.min(img.width, img.height);
-      canvas.width = canvas.height = size * 2;
-      const gif = new GIF({
+	  const DIAM = 32;
+	  const W = 75, H = 32;
+	  canvas.width = W;
+	  canvas.height = H;
+
+	  // 1) Pre-crop the uploaded image to a 32×32 circle
+	  const circ = document.createElement('canvas');
+	  circ.width = circ.height = DIAM;
+	  const cctx = circ.getContext('2d');
+	  cctx.save();
+	  cctx.beginPath();
+	  cctx.arc(DIAM/2, DIAM/2, DIAM/2, 0, 2*Math.PI);
+	  cctx.clip();
+	  // scale the source down/up to fill the 32×32 box:
+	  cctx.drawImage(img,
+		0,0, img.width, img.height,
+		0,0, DIAM, DIAM
+	  );
+	  cctx.restore();
+
+	  const gif = new GIF({
 		workers: 2,
 		quality: 10,
 		repeat: 0,
-		workerScript: 'gif.worker.js'  // important!
-		});
-		gif.on('abort', () => console.error('GIF creation was aborted'));
-		gif.on('error', err => console.error('GIF error:', err));
-		gif.on('progress', p => console.log(`Progress: ${(p * 100).toFixed(1)}%`));
+		workerScript: 'gif.worker.js'
+	  });
+	  gif.on('error', e=>console.error('GIF error',e));
+	  gif.on('progress', p=>console.log(`Progress ${(p*100).toFixed(0)}%`));
 
+	  // frame counts
+	  const stretchFrames = 10;
+	  const holdFrames    = 20;  // “wait a second”
+	  const shrinkFrames  = 10;
+	  const moveBackFrames= 10;
+	  const TOTAL = stretchFrames + holdFrames + shrinkFrames + moveBackFrames;
 
-      const frames = 60;
-      for (let i = 0; i < frames; i++) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(canvas.width / 2, canvas.height / 2, size / 2, 0, 2 * Math.PI);
-        ctx.clip();
+	  for (let i = 0; i < TOTAL; i++) {
+		ctx.clearRect(0,0,W,H);
 
-        let t = i / frames;
-        if (t < 0.25) {
-          // Stretch
-          let scale = 1 + t * 4;
-          ctx.drawImage(img, (canvas.width - size * scale) / 2, (canvas.height - size * scale) / 2, size * scale, size * scale);
-        } else if (t < 0.5) {
-          // Two cells
-          let offset = (t - 0.25) * 4 * size * 0.5;
-          ctx.drawImage(img, canvas.width / 2 - offset - size / 2, canvas.height / 2 - size / 2, size, size);
-          ctx.drawImage(img, canvas.width / 2 + offset - size / 2, canvas.height / 2 - size / 2, size, size);
-        } else if (t < 0.75) {
-          // One cell shrinks away
-          let shrink = 1 - (t - 0.5) * 4;
-          let offset = size * 0.5;
-          ctx.drawImage(img, canvas.width / 2 - offset - size / 2, canvas.height / 2 - size / 2, size * shrink, size * shrink);
-          ctx.drawImage(img, canvas.width / 2 + offset - size / 2, canvas.height / 2 - size / 2, size, size);
-        } else {
-          // Remaining cell returns to center
-          let returnOffset = (1 - (t - 0.75) * 4) * size * 0.5;
-          ctx.drawImage(img, canvas.width / 2 + returnOffset - size / 2, canvas.height / 2 - size / 2, size, size);
-        }
+		if (i < stretchFrames) {
+		  // 2) Stretch center from circle → full width oval
+		  let t = i / (stretchFrames-1);
+		  let sw = DIAM + t*(W - DIAM);
+		  ctx.drawImage(circ,
+			0,0, DIAM,DIAM,
+			(W - sw)/2, 0, sw, H
+		  );
+		}
+		else if (i < stretchFrames + holdFrames) {
+		  // 3) Two original circles, left & right
+		  ctx.drawImage(circ, 0, 0, DIAM, DIAM);
+		  ctx.drawImage(circ, W - DIAM, 0, DIAM, DIAM);
+		}
+		else if (i < stretchFrames + holdFrames + shrinkFrames) {
+		  // 4) Shrink right one
+		  let t = (i - (stretchFrames + holdFrames)) / (shrinkFrames-1);
+		  let s = 1 - t;  // from 1→0
+		  let sw = DIAM * s, sh = DIAM * s;
+		  ctx.drawImage(circ, 0, 0, DIAM, DIAM);
+		  ctx.drawImage(circ,
+			0,0, DIAM,DIAM,
+			W - sw, (H - sh)/2, sw, sh
+		  );
+		}
+		else {
+		  // 5) Move left back to center
+		  let t = (i - (stretchFrames + holdFrames + shrinkFrames)) / (moveBackFrames-1);
+		  let x = t * ((W/2 - DIAM/2) - 0);
+		  ctx.drawImage(circ,
+			0,0, DIAM,DIAM,
+			x, 0, DIAM, DIAM
+		  );
+		}
 
-        ctx.restore();
-        gif.addFrame(canvas, { copy: true, delay: 50 });
-      }
+		gif.addFrame(canvas, { copy: true, delay: 50 });
+	  }
 
-      gif.on('finished', (blob) => {
-        const url = URL.createObjectURL(blob);
-        downloadLink.href = url;
-        downloadLink.download = "mitosis.gif";
-        downloadLink.textContent = "Download Mitosis GIF";
-      });
-
-      gif.render();
-    }
+	  gif.on('finished', blob => {
+		downloadLink.href = URL.createObjectURL(blob);
+		downloadLink.download = 'mitosis.gif';
+		downloadLink.textContent = 'Download Mitosis GIF';
+	  }).render();
+	}
   </script>
 </body>
 </html>
