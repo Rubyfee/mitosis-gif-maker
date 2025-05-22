@@ -11,7 +11,7 @@
   </style>
 </head>
 <body>
-  <h1>Mitosis GIF Maker b5!</h1>
+  <h1>Mitosis GIF Maker b6!</h1>
   <input type="file" id="uploader" accept="image/png">
   <canvas id="canvas"></canvas>
   <a id="download"></a>
@@ -31,6 +31,11 @@
       img.onload = () => createMitosisGIF(img);
       img.src = URL.createObjectURL(file);
     };
+
+function easeOutCubic(x) {
+  return 1 - Math.pow(1 - x, 3);
+}
+
 
     function createMitosisGIF(img) {
 	  const DIAM = 32;
@@ -99,16 +104,29 @@
 		}
 		else if (i < stretchFrames + holdFrames) {
 		  const t = (i - stretchFrames) / (holdFrames - 1);
-		  // Pop-in in first 3 frames
-		  const scale = t < 0.15 ? (0.5 + 0.5 * (t / 0.15)) : 1;
+
+		  // Smooth pop-in during first 25% of the phase (e.g. 5 frames)
+		  const popDuration = 0.25;
+		  const eased = t < popDuration ? easeOutCubic(t / popDuration) : 1;
+		  const scale = eased * 1; // scale from 0 → 1
 
 		  const sw = DIAM * scale;
 		  const sh = DIAM * scale;
 		  const y = (H - sh) / 2;
 
-		  ctx.drawImage(circ, 0, 0, DIAM, DIAM, 0, y, sw, sh);
-		  ctx.drawImage(circ, 0, 0, DIAM, DIAM, W - sw, y, sw, sh);
+		  // Left circle scaling toward its own center
+		  ctx.drawImage(circ,
+			0, 0, DIAM, DIAM,
+			(DIAM / 2) - (sw / 2), y, sw, sh
+		  );
+
+		  // Right circle scaling toward its own center
+		  ctx.drawImage(circ,
+			0, 0, DIAM, DIAM,
+			W - DIAM / 2 - sw / 2, y, sw, sh
+		  );
 		}
+
 
 		else if (i < stretchFrames + holdFrames + shrinkFrames) {
 		  let t = (i - (stretchFrames + holdFrames)) / (shrinkFrames - 1);
