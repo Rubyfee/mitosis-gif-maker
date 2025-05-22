@@ -11,7 +11,7 @@
   </style>
 </head>
 <body>
-  <h1>Mitosis GIF Maker b6!</h1>
+  <h1>Mitosis GIF Maker b7!</h1>
   <input type="file" id="uploader" accept="image/png">
   <canvas id="canvas"></canvas>
   <a id="download"></a>
@@ -116,13 +116,13 @@ function easeOutCubic(x) {
 
 		  // Left circle scaling toward its own center
 		  ctx.drawImage(circ,
-			0, 0, DIAM, DIAM,
+			.5, .5, DIAM, DIAM,
 			(DIAM / 2) - (sw / 2), y, sw, sh
 		  );
 
 		  // Right circle scaling toward its own center
 		  ctx.drawImage(circ,
-			0, 0, DIAM, DIAM,
+			.5, .5, DIAM, DIAM,
 			W - DIAM / 2 - sw / 2, y, sw, sh
 		  );
 		}
