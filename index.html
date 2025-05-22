@@ -33,7 +33,16 @@
     function createMitosisGIF(img) {
       const size = Math.min(img.width, img.height);
       canvas.width = canvas.height = size * 2;
-      const gif = new GIF({ workers: 2, quality: 10, repeat: 0 });
+      const gif = new GIF({
+		workers: 2,
+		quality: 10,
+		repeat: 0,
+		workerScript: 'gif.worker.js'  // important!
+		});
+		gif.on('abort', () => console.error('GIF creation was aborted'));
+		gif.on('error', err => console.error('GIF error:', err));
+		gif.on('progress', p => console.log(`Progress: ${(p * 100).toFixed(1)}%`));
+
 
       const frames = 60;
       for (let i = 0; i < frames; i++) {
