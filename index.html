@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mitosis GIF Maker</title>
+  <script src="https://unpkg.com/gif.js.optimized/dist/gif.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; }
+    canvas { display: none; }
+    #download { margin-top: 1em; display: block; }
+  </style>
+</head>
+<body>
+  <h1>Mitosis GIF Maker</h1>
+  <input type="file" id="uploader" accept="image/*">
+  <canvas id="canvas"></canvas>
+  <a id="download"></a>
+
+  <script>
+    const input = document.getElementById('uploader');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const downloadLink = document.getElementById('download');
+
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = () => createMitosisGIF(img);
+      img.src = URL.createObjectURL(file);
+    };
+
+    function createMitosisGIF(img) {
+      const size = Math.min(img.width, img.height);
+      canvas.width = canvas.height = size * 2;
+      const gif = new GIF({ workers: 2, quality: 10, repeat: 0 });
+
+      const frames = 60;
+      for (let i = 0; i < frames; i++) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, size / 2, 0, 2 * Math.PI);
+        ctx.clip();
+
+        let t = i / frames;
+        if (t < 0.25) {
+          // Stretch
+          let scale = 1 + t * 4;
+          ctx.drawImage(img, (canvas.width - size * scale) / 2, (canvas.height - size * scale) / 2, size * scale, size * scale);
+        } else if (t < 0.5) {
+          // Two cells
+          let offset = (t - 0.25) * 4 * size * 0.5;
+          ctx.drawImage(img, canvas.width / 2 - offset - size / 2, canvas.height / 2 - size / 2, size, size);
+          ctx.drawImage(img, canvas.width / 2 + offset - size / 2, canvas.height / 2 - size / 2, size, size);
+        } else if (t < 0.75) {
+          // One cell shrinks away
+          let shrink = 1 - (t - 0.5) * 4;
+          let offset = size * 0.5;
+          ctx.drawImage(img, canvas.width / 2 - offset - size / 2, canvas.height / 2 - size / 2, size * shrink, size * shrink);
+          ctx.drawImage(img, canvas.width / 2 + offset - size / 2, canvas.height / 2 - size / 2, size, size);
+        } else {
+          // Remaining cell returns to center
+          let returnOffset = (1 - (t - 0.75) * 4) * size * 0.5;
+          ctx.drawImage(img, canvas.width / 2 + returnOffset - size / 2, canvas.height / 2 - size / 2, size, size);
+        }
+
+        ctx.restore();
+        gif.addFrame(ctx, { copy: true, delay: 50 });
+      }
+
+      gif.on('finished', (blob) => {
+        const url = URL.createObjectURL(blob);
+        downloadLink.href = url;
+        downloadLink.download = "mitosis.gif";
+        downloadLink.textContent = "Download Mitosis GIF";
+      });
+
+      gif.render();
+    }
+  </script>
+</body>
+</html>
