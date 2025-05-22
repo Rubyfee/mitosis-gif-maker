@@ -11,7 +11,7 @@
   </style>
 </head>
 <body>
-  <h1>Mitosis GIF Maker b4!</h1>
+  <h1>Mitosis GIF Maker b5!</h1>
   <input type="file" id="uploader" accept="image/png">
   <canvas id="canvas"></canvas>
   <a id="download"></a>
@@ -98,21 +98,38 @@
 		  );
 		}
 		else if (i < stretchFrames + holdFrames) {
-		  // 3) Two original circles, left & right
-		  ctx.drawImage(circ, 0, 0, DIAM, DIAM);
-		  ctx.drawImage(circ, W - DIAM, 0, DIAM, DIAM);
+		  const t = (i - stretchFrames) / (holdFrames - 1);
+		  // Pop-in in first 3 frames
+		  const scale = t < 0.15 ? (0.5 + 0.5 * (t / 0.15)) : 1;
+
+		  const sw = DIAM * scale;
+		  const sh = DIAM * scale;
+		  const y = (H - sh) / 2;
+
+		  ctx.drawImage(circ, 0, 0, DIAM, DIAM, 0, y, sw, sh);
+		  ctx.drawImage(circ, 0, 0, DIAM, DIAM, W - sw, y, sw, sh);
 		}
+
 		else if (i < stretchFrames + holdFrames + shrinkFrames) {
-		  // 4) Shrink right one
-		  let t = (i - (stretchFrames + holdFrames)) / (shrinkFrames-1);
-		  let s = 1 - t;  // from 1→0
-		  let sw = DIAM * s, sh = DIAM * s;
-		  ctx.drawImage(circ, 0, 0, DIAM, DIAM);
+		  let t = (i - (stretchFrames + holdFrames)) / (shrinkFrames - 1);
+		  let scale = 1 - t;
+
+		  const leftX = 0;
+		  const rightX = W - DIAM / 2 - (DIAM * scale) / 2;
+
+		  const swL = DIAM;
+		  const swR = DIAM * scale;
+		  const shR = DIAM * scale;
+
+		  ctx.drawImage(circ, 0, 0, DIAM, DIAM, leftX, 0, swL, DIAM);
 		  ctx.drawImage(circ,
-			0,0, DIAM,DIAM,
-			W - sw, (H - sh)/2, sw, sh
+			0, 0, DIAM, DIAM,
+			W - DIAM / 2 - swR / 2,
+			(H - shR) / 2,
+			swR, shR
 		  );
 		}
+
 		else {
 		  // 5) Move left back to center
 		  let t = (i - (stretchFrames + holdFrames + shrinkFrames)) / (moveBackFrames-1);
