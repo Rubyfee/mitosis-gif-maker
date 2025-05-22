@@ -11,16 +11,18 @@
   </style>
 </head>
 <body>
-  <h1>Mitosis GIF Maker b3!</h1>
+  <h1>Mitosis GIF Maker b4!</h1>
   <input type="file" id="uploader" accept="image/png">
   <canvas id="canvas"></canvas>
   <a id="download"></a>
+  <p id="status">Waiting for upload...</p>
 
   <script>
     const input = document.getElementById('uploader');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const downloadLink = document.getElementById('download');
+	const status = document.getElementById('status');
 
     input.onchange = (e) => {
       const file = e.target.files[0];
@@ -53,12 +55,28 @@
 
 	  const gif = new GIF({
 		workers: 2,
-		quality: 10,
+		quality: 1,              
 		repeat: 0,
-		workerScript: 'gif.worker.js'
+		workerScript: 'gif.worker.js',
+		dither: false, 
 	  });
-	  gif.on('error', e=>console.error('GIF error',e));
-	  gif.on('progress', p=>console.log(`Progress ${(p*100).toFixed(0)}%`));
+		gif.on('error', e => {
+		console.error('GIF error', e);
+		status.textContent = 'Something went wrong!';
+		});
+		
+		gif.on('progress', p => {
+		  const percent = (p * 100).toFixed(0);
+		  status.textContent = `Generating GIF: ${percent}%`;
+		});
+
+		gif.on('finished', blob => {
+		  downloadLink.href = URL.createObjectURL(blob);
+		  downloadLink.download = 'mitosis.gif';
+		  downloadLink.textContent = 'Download Mitosis GIF';
+		  status.textContent = 'Done!';
+		});
+
 
 	  // frame counts
 	  const stretchFrames = 10;
